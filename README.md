@@ -1,5 +1,6 @@
 # Topics for Deno KV Queues
 
+[![deno module](https://shield.deno.dev/x/topics)](https://deno.land/x/topics)
 [![JSR](https://jsr.io/badges/@mieszko/topics)](https://jsr.io/@mieszko/topics)
 
 Use Deno KV queues with topics.
