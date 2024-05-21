@@ -10,7 +10,9 @@ those items.
 ## Quick Start
 
 ```typescript
-import { enqueue, listenQueue } from "https://deno.land/x/topics/mod.ts";
+import { connectTopicQueue } from "jsr:@mieszko/topics";
+
+const { enqueue, listenQueue } = await connectTopicQueue();
 
 // Call listenQueue on the top level.
 listenQueue("my-queue", async (data) => {
@@ -23,7 +25,11 @@ enqueue("my-queue", { example: "Hello!" });
 ## Advanced Usage
 
 ```typescript
-import { enqueue, listenQueue } from "https://deno.land/x/topics/mod.ts";
+import { connectTopicQueue } from "jsr:@mieszko/topics";
+
+// Connect to any KV store by passing a KV connection to connectTopicQueue.
+const kv = await Deno.openKv(":memory:");
+const { enqueue, listenQueue } = await connectTopicQueue(kv);
 
 type MyData = {
   example: string;
@@ -34,7 +40,6 @@ listenQueue<MyData>(["my", "queue"], async (data) => {
 });
 
 // You can optionally pass an atomic instance to enqueue.
-await using kv = await Deno.openKv();
 const atomic = kv.atomic();
 
 // If you call enqueue before listenQueue, an error will be thrown.
