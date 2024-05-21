@@ -1,6 +1,6 @@
 {
   "name": "@mieszko/topics",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "exports": "./mod.ts",
   "tasks": {
     "format": "deno fmt --unstable-kv",

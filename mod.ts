@@ -1,8 +1,15 @@
-export type QueueKey = string | (string | number | boolean)[];
+/**
+ * Topics are strings or arrays of strings, numbers, or booleans.
+ */
+export type Topic = string | (string | number | boolean)[];
+
+/**
+ * Queue listeners are called when a payload is received from the Deno KV queue.
+ */
 export type QueueListener<T> = (payload: T) => void | Promise<void>;
 
 type WrappedPayload<T> = {
-  queueKey: QueueKey;
+  topicKey: Topic;
   payload: T;
   keysIfUndelivered: Deno.KvKey[];
   __mieszko_topics__: 1 | undefined;
@@ -11,27 +18,27 @@ type WrappedPayload<T> = {
 // deno-lint-ignore no-explicit-any
 const listeners: Map<string, QueueListener<any>> = new Map();
 
-function computeQueueId(queueKey: QueueKey) {
-  return JSON.stringify(queueKey);
+function getTopicId(topicKey: Topic) {
+  return JSON.stringify(topicKey);
 }
 
 /**
  * Enqueues a payload to the Deno KV queue. You must call `listenQueue` before calling this function.
  */
 export async function enqueue<T = unknown>(
-  queueKey: QueueKey,
+  topicKey: Topic,
   payload: T,
   options: Parameters<Deno.Kv["enqueue"]>[1] = {},
   atomic?: Deno.AtomicOperation,
 ) {
-  const queueId = computeQueueId(queueKey);
+  const queueId = getTopicId(topicKey);
 
   if (!listeners.has(queueId)) {
     throw new Error(`No listener for queue ${queueId}`);
   }
 
   const wrappedPayload: WrappedPayload<T> = {
-    queueKey,
+    topicKey,
     payload,
     keysIfUndelivered: options.keysIfUndelivered ?? [],
     __mieszko_topics__: 1,
@@ -53,8 +60,8 @@ export async function enqueue<T = unknown>(
 /**
  * Listens to a queue and calls the callback when a payload is enqueued.
  */
-export function listenQueue<T>(queueKey: QueueKey, callback: QueueListener<T>) {
-  const queueId = computeQueueId(queueKey);
+export function listenQueue<T>(topicKey: Topic, callback: QueueListener<T>) {
+  const queueId = getTopicId(topicKey);
 
   listeners.set(queueId, callback);
 }
@@ -62,13 +69,13 @@ export function listenQueue<T>(queueKey: QueueKey, callback: QueueListener<T>) {
 Deno.openKv().then((kv) => {
   kv.listenQueue(
     async (
-      { queueKey, payload, __mieszko_topics__ }: WrappedPayload<unknown>,
+      { topicKey, payload, __mieszko_topics__ }: WrappedPayload<unknown>,
     ) => {
       if (__mieszko_topics__ !== 1) {
         throw new Error("Unknown queue payload received");
       }
 
-      const queueId = computeQueueId(queueKey);
+      const queueId = getTopicId(topicKey);
       const listener = listeners.get(queueId);
 
       if (listener) {
