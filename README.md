@@ -1,5 +1,7 @@
 # Topics for Deno KV Queues
 
+[![JSR](https://jsr.io/badges/@mieszko/topics)](https://jsr.io/@mieszko/topics)
+
 Use Deno KV queues with topics.
 
 This module calls `kv.listenQueue` internally, so you cannot call
