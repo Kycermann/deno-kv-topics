@@ -1,9 +1,12 @@
 {
   "name": "@mieszko/topics",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "exports": "./mod.ts",
   "tasks": {
-    "format": "deno fmt --unstable-kv",
-    "check": "deno fmt --check && deno lint && deno check **/*.ts"
+    "check": "deno fmt --check && deno lint && deno check **/*.ts",
+    "test": "deno test --unstable-kv --parallel"
+  },
+  "publish": {
+    "exclude": ["test.ts", "deno.lock", ".github"]
   }
 }
