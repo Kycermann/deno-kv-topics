@@ -32,7 +32,7 @@ import { connectTopicQueue } from "jsr:@mieszko/topics";
 
 // Connect to any KV store by passing a KV connection to connectTopicQueue.
 const kv = await Deno.openKv(":memory:");
-const { enqueue, listenQueue } = await connectTopicQueue(kv);
+const { enqueue, listenQueue, close } = await connectTopicQueue(kv);
 
 type MyData = {
   example: string;
@@ -54,4 +54,7 @@ enqueue<MyData>(
 );
 
 await atomic.commit();
+
+// Close the connection when you are done.
+close();
 ```

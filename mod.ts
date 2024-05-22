@@ -1,42 +1,11 @@
-/**
- * Topics are strings or arrays of strings, numbers, or booleans.
- */
-export type Topic = string | (string | number | boolean)[];
+import type {
+  QueueListener,
+  Topic,
+  TopicQueueConnection,
+  WrappedPayload,
+} from "./types.ts";
 
-/**
- * Queue listeners are called when a payload is received from the Deno KV queue.
- */
-export type QueueListener<T> = (payload: T) => void | Promise<void>;
-
-/**
- * Contains the functions to enqueue and listen to a Deno KV queue with topics.
- */
-type TopicQueueConnection = {
-  enqueue: <T = unknown>(
-    topicKey: Topic,
-    payload: T,
-    options?: Parameters<Deno.Kv["enqueue"]>[1],
-    atomic?: Deno.AtomicOperation,
-  ) => Promise<void>;
-  listenQueue: <T>(
-    topicKey: Topic,
-    callback: QueueListener<T>,
-  ) => Promise<void>;
-  close: () => void;
-};
-
-/**
- * The payload that is actually enqueued to Deno KV.
- */
-type WrappedPayload<T> = {
-  topicKey: Topic;
-  payload: T;
-  keysIfUndelivered: Deno.KvKey[];
-  __mieszko_topics__: 1 | undefined;
-};
-
-// deno-lint-ignore no-explicit-any
-const listeners: Map<string, QueueListener<any>> = new Map();
+export type { QueueListener, Topic, TopicQueueConnection };
 
 function getTopicId(topicKey: Topic) {
   return JSON.stringify(topicKey);
@@ -51,8 +20,7 @@ export async function connectTopicQueue(
   kvInstance?: Deno.Kv,
 ): Promise<TopicQueueConnection> {
   const kv = kvInstance ?? await Deno.openKv();
-
-  let listening = false;
+  const listeners: Map<string, QueueListener<unknown>> = new Map();
 
   /**
    * Enqueues a payload to the Deno KV queue. You must call `listenQueue` before calling this function.
@@ -77,7 +45,6 @@ export async function connectTopicQueue(
     const wrappedPayload: WrappedPayload<T> = {
       topicKey,
       payload,
-      keysIfUndelivered: options.keysIfUndelivered ?? [],
       __mieszko_topics__: 1,
     };
 
@@ -87,8 +54,7 @@ export async function connectTopicQueue(
       const { ok } = await kv.enqueue(wrappedPayload, options);
 
       if (!ok) {
-        console.log("Payload", wrappedPayload);
-        throw new Error(`Failed to enqueue ${queueId}`);
+        throw new Error(`Failed to enqueue into ${queueId}`);
       }
     }
   }
@@ -99,23 +65,21 @@ export async function connectTopicQueue(
    * @param topicKey The topic to listen to.
    * @param callback The callback to call when a payload is enqueued.
    */
-  async function listenQueue<T>(topicKey: Topic, callback: QueueListener<T>) {
+  function listenQueue<T>(topicKey: Topic, callback: QueueListener<T>) {
     const queueId = getTopicId(topicKey);
 
-    listeners.set(queueId, callback);
+    listeners.set(queueId, callback as QueueListener<unknown>);
 
-    if (listening) {
+    if (listeners.size > 1) {
       return;
     }
 
-    listening = true;
-
-    await kv.listenQueue(
+    kv.listenQueue(
       async (
         { topicKey, payload, __mieszko_topics__ }: WrappedPayload<unknown>,
       ) => {
         if (__mieszko_topics__ !== 1) {
-          throw new Error("Unknown queue payload received");
+          throw new Error("Unrecognised payload format");
         }
 
         const queueId = getTopicId(topicKey);
@@ -137,5 +101,10 @@ export async function connectTopicQueue(
     kv.close();
   }
 
-  return { enqueue, listenQueue, close };
+  return {
+    enqueue,
+    listenQueue,
+    close,
+    [Symbol.dispose]: close,
+  };
 }
