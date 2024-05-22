@@ -1,5 +1,6 @@
 # Topics for Deno KV Queues
 
+[![Publish](https://github.com/Kycermann/deno-kv-topics/actions/workflows/publish.yml/badge.svg)](https://github.com/Kycermann/deno-kv-topics/actions/workflows/publish.yml)
 [![deno module](https://shield.deno.dev/x/topics)](https://deno.land/x/topics)
 [![JSR](https://jsr.io/badges/@mieszko/topics)](https://jsr.io/@mieszko/topics)
 
