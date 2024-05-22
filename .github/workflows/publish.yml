@@ -35,5 +35,14 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git tag $(jq -r '.version' deno.json) || true
-          git push origin $(jq -r '.version' deno.json)
+          git fetch --tags
+  
+          VERSION=$(jq -r '.version' deno.json)
+  
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, doing nothing."
+          else
+            # If the tag does not exist, create and push it
+            git tag "$VERSION"
+            git push origin "$VERSION"
+          fi
