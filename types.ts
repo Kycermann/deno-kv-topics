@@ -18,10 +18,7 @@ export type TopicQueueConnection = {
     options?: Parameters<Deno.Kv["enqueue"]>[1],
     atomic?: Deno.AtomicOperation,
   ) => Promise<void>;
-  listenQueue: <T>(
-    topicKey: Topic,
-    callback: QueueListener<T>,
-  ) => void;
+  listenQueue: <T>(topicKey: Topic, callback: QueueListener<T>) => void;
   close: () => void;
   [Symbol.dispose]: () => void;
 };

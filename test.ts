@@ -262,3 +262,25 @@ Deno.test("Should pass options to kv.enqueue", async () => {
   // Ensure kv.enqueue was called with the correct options
   assertEquals(options, testOptions);
 });
+
+Deno.test("Should not call kv.listenQueue if disableListenQueue is true", async () => {
+  await using kv = await Deno.openKv(":memory:");
+  await using q = await connectTopicQueue(kv, true);
+
+  const testTopic = "testTopic";
+
+  let called = false;
+
+  // @ts-ignore Mock kv.listenQueue to catch calls
+  kv.listenQueue = () => {
+    called = true;
+  };
+
+  // Setup listener and enqueue
+  q.listenQueue(testTopic, () => {});
+
+  // Ensure kv.listenQueue was not called
+  if (called) {
+    throw new Error("kv.listenQueue was called");
+  }
+});

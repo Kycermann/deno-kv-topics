@@ -15,11 +15,13 @@ function getTopicId(topicKey: Topic) {
  * Connects to Deno KV and returns functions to enqueue and listen to a queue with topics.
  *
  * @param kvInstance Deno KV connection to use. If not provided, a new connection will be created.
+ * @param disableListenQueue Whether to disable listening to the KV queue. Default is `false`.
  */
 export async function connectTopicQueue(
   kvInstance?: Deno.Kv,
+  disableListenQueue = false,
 ): Promise<TopicQueueConnection> {
-  const kv = kvInstance ?? await Deno.openKv();
+  const kv = kvInstance ?? (await Deno.openKv());
   const listeners: Map<string, QueueListener<unknown>> = new Map();
 
   /**
@@ -70,14 +72,16 @@ export async function connectTopicQueue(
 
     listeners.set(queueId, callback as QueueListener<unknown>);
 
-    if (listeners.size > 1) {
+    if (listeners.size > 1 || disableListenQueue) {
       return;
     }
 
     kv.listenQueue(
-      async (
-        { topicKey, payload, __mieszko_topics__ }: WrappedPayload<unknown>,
-      ) => {
+      async ({
+        topicKey,
+        payload,
+        __mieszko_topics__,
+      }: WrappedPayload<unknown>) => {
         if (__mieszko_topics__ !== 1) {
           throw new Error("Unrecognised payload format");
         }

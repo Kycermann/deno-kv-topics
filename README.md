@@ -33,7 +33,13 @@ import { connectTopicQueue } from "jsr:@mieszko/topics";
 
 // Connect to any KV store by passing a KV connection to connectTopicQueue.
 const kv = await Deno.openKv(":memory:");
-const { enqueue, listenQueue, close } = await connectTopicQueue(kv);
+
+// If kv.listenQueue freezes your build process, you can disable it here.
+const disableListenQueue = Deno.env.has("FRESH_IS_BUILDING");
+const { enqueue, listenQueue, close } = await connectTopicQueue(
+  kv,
+  disableListenQueue,
+);
 
 type MyData = {
   example: string;
